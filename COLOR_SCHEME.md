@@ -20,13 +20,25 @@
 --hl7-border:   #e2e8f0  /* Border color */
 ```
 
+### Background Red Tones (HL7 International Inspired)
+
+```css
+--hl7-red-soft:    #d45d62  /* Soft red for backgrounds */
+--hl7-red-lighter: #e89093  /* Lighter red accent */
+--hl7-coral:       #e67378  /* Coral red tone */
+```
+
 ## Usage in Application
 
 ### Background Gradient
-- Main body: Blue to Purple gradient
+- Main body: Warm red gradient (HL7 International inspired)
   ```css
-  background: linear-gradient(135deg, #2f5aae 0%, #9463ae 100%);
+  background: linear-gradient(135deg, #c85a5f 0%, #8b3a3e 50%, #5d2729 100%);
   ```
+  - Start: Soft rose red (#c85a5f)
+  - Middle: Deep burgundy (#8b3a3e)
+  - End: Rich dark red (#5d2729)
+  - Creates a professional, warm, eye-comfortable gradient
 
 ### Buttons
 - **Primary Button**: Red to Blue gradient
@@ -76,17 +88,34 @@
 4. **Visual Hierarchy**: Color coding helps identify segment types quickly
 5. **Accessibility**: High contrast ratios for text readability
 
+## Design Rationale
+
+### Background Color Choice
+
+The red-toned background gradient was chosen to:
+1. **Align with HL7 International branding** - Red is the primary HL7 color globally
+2. **Provide eye comfort** - Softer, desaturated reds (#c85a5f to #5d2729) instead of vibrant red
+3. **Create professional warmth** - Burgundy and rose tones convey healthcare professionalism
+4. **Ensure readability** - Dark red provides good contrast with white panels
+5. **Match HL7 Portugal identity** - Incorporates the official red (#ec2227) in softer form
+
+### Color Psychology in Healthcare
+- **Red**: Energy, urgency, importance (appropriate for critical medical data)
+- **Warm tones**: Trust, stability, professionalism
+- **Gradient depth**: Sophistication and modern design
+
 ## Comparison
 
-### Old Colors
-- Primary: Generic purple #667eea
-- Secondary: Generic purple #764ba2
-- Segments: Random pastel colors
+### Original Colors
+- Background: Generic purple-blue gradient
+- Primary: Purple #667eea
+- Secondary: Purple #764ba2
 
-### New Colors
+### Updated Colors
+- Background: HL7-inspired red gradient (rose to burgundy to dark red) ✓
 - Primary: HL7 Red #ec2227 ✓
 - Secondary: HL7 Blue #2f5aae ✓
-- Segments: Coordinated blue/red/purple scheme ✓
+- Segments: Coordinated red/blue/purple scheme ✓
 
 ---
 
