@@ -194,6 +194,7 @@ ORC|NW|ORDER123|FILLER456|GROUP789|SC||^^^^^R||20250107120000|NURSE456^Williams^
 OBR|1|ORDER123|FILLER456|CBC^Complete Blood Count^L|||20250107120000|||TECH789^Brown^David`;
 
         setInputMessage(exampleMessage);
+        setOutputMessage('');  // Clear previous output
         setAlert({ type: 'info', message: 'Example message loaded.' });
     };
 
