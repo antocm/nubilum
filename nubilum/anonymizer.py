@@ -167,6 +167,8 @@ class HL7Anonymizer:
                 fields = self._anonymize_obx_segment(fields)
             elif segment_type == 'ORC' or segment_type == 'OBR':
                 fields = self._anonymize_order_segment(fields)
+            elif segment_type in ['SCH', 'AIG', 'AIL', 'AIP']:
+                fields = self._anonymize_scheduling_segment(fields)
             elif segment_type in ['EVN', 'PV2']:
                 fields = self._anonymize_generic_identifiers(fields)
 
@@ -385,3 +387,35 @@ class HL7Anonymizer:
             parts[3] = "12345"
 
         return '^'.join(parts)
+
+    def _anonymize_scheduling_segment(self, fields: list) -> list:
+        """Anonymize SCH/AIG/AIL/AIP (Scheduling) segments."""
+        # These segments contain provider names and identifiers
+        # SCH: fields 15-16 contain provider info
+        # AIG: field 3 contains resource ID (provider)
+        # AIL: field 3 contains location
+        # AIP: field 3 contains provider info
+
+        segment_type = fields[0] if len(fields) > 0 else ""
+
+        if segment_type == 'SCH':
+            # Fields 15 and 16 may contain provider names
+            if len(fields) > 15 and fields[15] and '^' in fields[15]:
+                fields[15] = self._anonymize_provider_name(fields[15])
+            if len(fields) > 16 and fields[16] and '^' in fields[16]:
+                fields[16] = self._anonymize_provider_name(fields[16])
+
+        elif segment_type == 'AIG':
+            # Field 3 contains resource ID (provider identifier/name)
+            if len(fields) > 3 and fields[3] and '^' in fields[3]:
+                fields[3] = self._anonymize_provider_name(fields[3])
+
+        elif segment_type == 'AIP':
+            # Field 3 contains provider information
+            if len(fields) > 3 and fields[3] and '^' in fields[3]:
+                fields[3] = self._anonymize_provider_name(fields[3])
+            # Field 5 may also contain provider info
+            if len(fields) > 5 and fields[5] and '^' in fields[5]:
+                fields[5] = self._anonymize_provider_name(fields[5])
+
+        return fields
