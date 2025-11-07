@@ -217,27 +217,27 @@ OBR|1|ORDER123|FILLER456|CBC^Complete Blood Count^L|||20250107120000|||TECH789^B
                 <h3>Segment Color Legend</h3>
                 <div className="legend-items">
                     <div className="legend-item">
-                        <div className="legend-color" style={{ background: 'rgba(102, 126, 234, 0.1)' }}></div>
+                        <div className="legend-color" style={{ background: 'rgba(47, 90, 174, 0.12)' }}></div>
                         <span>MSH - Message Header</span>
                     </div>
                     <div className="legend-item">
-                        <div className="legend-color" style={{ background: 'rgba(237, 100, 166, 0.1)' }}></div>
+                        <div className="legend-color" style={{ background: 'rgba(236, 34, 39, 0.12)' }}></div>
                         <span>PID - Patient Identification</span>
                     </div>
                     <div className="legend-item">
-                        <div className="legend-color" style={{ background: 'rgba(52, 211, 153, 0.1)' }}></div>
+                        <div className="legend-color" style={{ background: 'rgba(148, 99, 174, 0.12)' }}></div>
                         <span>PV1 - Patient Visit</span>
                     </div>
                     <div className="legend-item">
-                        <div className="legend-color" style={{ background: 'rgba(251, 191, 36, 0.1)' }}></div>
+                        <div className="legend-color" style={{ background: 'rgba(47, 90, 174, 0.18)' }}></div>
                         <span>OBR - Observation Request</span>
                     </div>
                     <div className="legend-item">
-                        <div className="legend-color" style={{ background: 'rgba(96, 165, 250, 0.1)' }}></div>
+                        <div className="legend-color" style={{ background: 'rgba(148, 99, 174, 0.18)' }}></div>
                         <span>OBX - Observation Result</span>
                     </div>
                     <div className="legend-item">
-                        <div className="legend-color" style={{ background: 'rgba(248, 113, 113, 0.1)' }}></div>
+                        <div className="legend-color" style={{ background: 'rgba(236, 34, 39, 0.18)' }}></div>
                         <span>NK1 - Next of Kin</span>
                     </div>
                 </div>
