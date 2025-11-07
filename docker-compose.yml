@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  nubilum:
+    build: .
+    container_name: nubilum
+    ports:
+      - "8080:80"
+    volumes:
+      - ./logs:/var/log/nubilum
+    environment:
+      - NUBILUM_LOG_DIR=/var/log/nubilum
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

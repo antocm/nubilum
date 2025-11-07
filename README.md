@@ -1,0 +1,319 @@
+# Nubilum - HL7 Portugal Message Anonymization Tool
+
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.9+-green.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
+Nubilum is a web-based tool for anonymizing HL7 v2 messages in ER7 format. It provides a user-friendly interface to quickly anonymize patient identifiable information while preserving the message structure and clinical context.
+
+## Features
+
+- **Full PID Segment Anonymization**: Comprehensive anonymization of patient identification data
+- **Multi-Segment Support**: Anonymizes PID, NK1, PV1, OBX, ORC, OBR, and other segments
+- **Smart Pseudo-Generation**: Generates consistent pseudo-names and IDs that indicate field purpose
+- **Real-Time Processing**: No storage of messages - all processing is done in real-time
+- **Interactive Display**: Color-coded segments with inline editing capabilities
+- **Easy Copy/Paste**: One-click copying of anonymized messages
+- **Docker-Ready**: Complete containerization with nginx reverse proxy
+- **Comprehensive Logging**: File-based logging for audit and debugging
+
+## Privacy & Security
+
+**IMPORTANT**: This tool does NOT store any messages. All anonymization happens in real-time, and no data is persisted on the server. However, users must ensure they have proper authorization to process HL7 messages containing personal health information.
+
+## Installation
+
+### Quick Start with Docker
+
+1. **Build the Docker image:**
+
+```bash
+docker build -t nubilum:1.0.0 .
+```
+
+2. **Run the container:**
+
+```bash
+docker run -d \
+  --name nubilum \
+  -p 8080:80 \
+  -v $(pwd)/logs:/var/log/nubilum \
+  nubilum:1.0.0
+```
+
+3. **Access the application:**
+
+Open your browser and navigate to `http://localhost:8080`
+
+### Manual Installation
+
+1. **Build the wheel package:**
+
+```bash
+./build.sh
+```
+
+2. **Install the package:**
+
+```bash
+pip install dist/nubilum-1.0.0-py3-none-any.whl
+```
+
+3. **Run the application:**
+
+```bash
+# Set log directory (optional)
+export NUBILUM_LOG_DIR=/var/log/nubilum
+
+# Run with Gunicorn (recommended for production)
+gunicorn --bind 0.0.0.0:5000 --workers 4 nubilum.app:app
+
+# Or run with Flask development server
+python -m nubilum.app
+```
+
+## Usage Examples
+
+### Example 1: Basic ADT Message Anonymization
+
+**Input Message:**
+
+```
+MSH|^~\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|20250107120000||ADT^A01|MSG00001|P|2.5
+PID|1||123456789^^^HOSPITAL^MR||Doe^John^Robert||19800515|M|||123 Main Street^Apt 4B^Lisbon^Lisboa^1000-001^PT||+351912345678|+351213456789|EN|M|CAT|987654321^^^HOSPITAL^AN||123-45-6789
+PV1|1|I|ICU^101^01^HOSPITAL|||DOC123^Johnson^Michael^^^Dr.|||SUR||||2|||DOC123^Johnson^Michael^^^Dr.|INP|VISIT123456|||||||||||||||||||HOSPITAL||REG|||20250107110000
+```
+
+**Anonymized Output:**
+
+```
+MSH|^~\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|20250107120000||ADT^A01|MSG00001|P|2.5
+PID|1||PID123456^^^HOSPITAL^MR||Doe42^John37^Robert||19800530|M|||Street23^Apt 4B^City^Lisboa^12345^PT||+351123456789|+351987654321|EN|M|CAT|ACCT987654^^^HOSPITAL^AN||SSN123456
+PV1|1|I|ICU^101^01^HOSPITAL|||DrDoe12^John45^^^Dr.|||SUR||||2|||DrDoe12^John45^^^Dr.|INP|VISIT789012|||||||||||||||||||HOSPITAL||REG|||20250107110000
+```
+
+### Example 2: ORM Order Message with Patient Demographics
+
+**Input Message:**
+
+```
+MSH|^~\&|LAB_SYSTEM|HOSPITAL|EMR|HOSPITAL|20250107143000||ORM^O01|MSG00002|P|2.5
+PID|1||987654321^^^HOSPITAL^MR||Silva^Maria^Teresa||19750823|F|||456 Oak Avenue^^Porto^^4000-001^PT||+351917654321||PT|S|
+NK1|1|Silva^Jose^||HUSBAND|456 Oak Avenue^^Porto^^4000-001^PT|+351918765432
+ORC|NW|ORDER789|FILLER123||SC||^^^^^R||20250107143000|NURSE789^Anderson^Lisa
+OBR|1|ORDER789|FILLER123|CBC^Complete Blood Count^L|||20250107143000|||TECH456^Martinez^Carlos
+```
+
+**Anonymized Output:**
+
+```
+MSH|^~\&|LAB_SYSTEM|HOSPITAL|EMR|HOSPITAL|20250107143000||ORM^O01|MSG00002|P|2.5
+PID|1||PID987654^^^HOSPITAL^MR||Smith78^Jane12^Test||19750912|F|||Street89^Apt 4B^City^^12345^PT||+351234567890||PT|S|
+NK1|1|Sample34^Demo56^||HUSBAND|Street12^^City^^12345^PT|+351345678901
+ORC|NW|ORDER789012|FILLER456789||SC||^^^^^R||20250107143000|DrSmith23^John67
+OBR|1|ORDER789012|FILLER456789|CBC^Complete Blood Count^L|||20250107143000|||DrDoe89^Test45
+```
+
+### Example 3: Using the Web Interface
+
+1. **Load the application** in your browser
+2. **Paste your HL7 message** into the left input panel
+3. **Click "Anonymize Message"** button
+4. **Review the color-coded output** in the right panel:
+   - MSH segments are highlighted in purple
+   - PID segments are highlighted in pink
+   - PV1 segments are highlighted in green
+   - OBR/OBX segments are highlighted in yellow/blue
+5. **Edit any field** by clicking on it in the output panel
+6. **Copy the result** using the "Copy to Clipboard" button
+
+### Example 4: API Usage
+
+You can also use the API directly:
+
+```bash
+curl -X POST http://localhost:8080/api/anonymize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "MSH|^~\\&|APP|FACILITY|REC|FAC|20250107||ADT^A01|MSG001|P|2.5\nPID|1||123456||Doe^John||19800515|M"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "anonymized_message": "MSH|^~\\&|APP|FACILITY|REC|FAC|20250107||ADT^A01|MSG001|P|2.5\nPID|1||PID123456||Doe42^John37||19800530|M"
+}
+```
+
+## Anonymization Rules
+
+### PID Segment (Patient Identification)
+
+| Field | Description | Anonymization Method |
+|-------|-------------|---------------------|
+| PID-3 | Patient ID | Generates pseudo ID: `PID######` |
+| PID-5 | Patient Name | Generates pseudo names: `LastName##^FirstName##` |
+| PID-6 | Mother's Maiden Name | Generates pseudo name |
+| PID-7 | Date of Birth | Shifts date by consistent offset |
+| PID-9 | Patient Alias | Generates pseudo name |
+| PID-11 | Patient Address | Replaces with generic address |
+| PID-13/14 | Phone Numbers | Generates pseudo phone: `+351#########` |
+| PID-18 | Account Number | Generates pseudo ID: `ACCT######` |
+| PID-19 | SSN | Generates pseudo ID: `SSN######` |
+
+### NK1 Segment (Next of Kin)
+
+- **Name**: Pseudo-anonymized
+- **Address**: Generic address
+- **Phone**: Pseudo phone number
+
+### PV1 Segment (Patient Visit)
+
+- **Attending/Referring/Consulting Doctors**: Pseudo-anonymized with "Dr" prefix
+- **Visit Number**: Generates pseudo ID: `VISIT######`
+
+### ORC/OBR Segments (Orders)
+
+- **Placer/Filler Order Numbers**: Generates pseudo ID: `ORDER######`
+- **Ordering Provider**: Pseudo-anonymized with "Dr" prefix
+
+## Configuration
+
+### Environment Variables
+
+- `NUBILUM_LOG_DIR`: Directory for log files (default: `/var/log/nubilum`)
+
+### Docker Volume Mounts
+
+- `/var/log/nubilum`: Application logs
+- `/etc/nginx/sites-available/nubilum`: Custom nginx configuration
+
+## Development
+
+### Running Tests
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+### Building from Source
+
+```bash
+# Install build dependencies
+pip install build
+
+# Build wheel
+python -m build
+
+# Install locally
+pip install dist/nubilum-1.0.0-py3-none-any.whl
+```
+
+## Architecture
+
+```
+┌─────────────────┐
+│   Web Browser   │
+└────────┬────────┘
+         │ HTTP :80
+         ▼
+┌─────────────────┐
+│     Nginx       │  (Reverse Proxy)
+│  Static Files   │
+└────────┬────────┘
+         │ /api/*
+         ▼
+┌─────────────────┐
+│  Flask + CORS   │  (Python Backend)
+│   Gunicorn      │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  HL7Anonymizer  │  (Anonymization Engine)
+│   HL7apy Lib    │
+└─────────────────┘
+```
+
+## Supported HL7 Segments
+
+- **MSH**: Message Header
+- **EVN**: Event Type
+- **PID**: Patient Identification (Primary anonymization target)
+- **NK1**: Next of Kin
+- **PV1**: Patient Visit
+- **PV2**: Patient Visit - Additional Info
+- **ORC**: Common Order
+- **OBR**: Observation Request
+- **OBX**: Observation Result
+
+## Logging
+
+Logs are written to files in the configured log directory:
+
+- `nubilum_YYYYMMDD.log`: Application logs
+- `access.log`: HTTP access logs (when using Gunicorn)
+- `error.log`: Error logs
+
+## Security Considerations
+
+1. **No Data Persistence**: Messages are never stored on disk or in memory beyond request processing
+2. **No External Connections**: Tool operates completely offline
+3. **Audit Logging**: All anonymization requests are logged (without message content)
+4. **Size Limits**: Maximum message size is 1MB to prevent memory issues
+5. **CORS Enabled**: For development; configure appropriately for production
+
+## Troubleshooting
+
+### Container won't start
+
+Check logs:
+```bash
+docker logs nubilum
+```
+
+### Anonymization fails
+
+- Ensure message is in valid ER7 format
+- Check that segment separators are `|`
+- Verify message is not corrupted
+
+### Frontend not loading
+
+- Check nginx logs: `docker exec nubilum tail /var/log/nginx/nubilum_error.log`
+- Verify static files are present in the package
+
+## Contributing
+
+Contributions are welcome! Please ensure:
+
+1. Code follows PEP 8 style guidelines
+2. All tests pass
+3. New features include tests
+4. Documentation is updated
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- HL7 Portugal for supporting this project
+- HL7apy library for HL7 parsing capabilities
+- Flask and React communities
+
+## Contact
+
+For issues, questions, or contributions, please visit:
+- HL7 Portugal: https://hl7.pt
+- Project Repository: [Add your repository URL here]
+
+---
+
+**Version**: 1.0.0
+**Last Updated**: January 2025
+**Maintained by**: HL7 Portugal
