@@ -253,19 +253,26 @@ body {
 }
 
 .hl7-segment-evn,
-.hl7-segment-orc {
+.hl7-segment-orc,
+.hl7-segment-sch,
+.hl7-segment-rgs,
+.hl7-segment-aig,
+.hl7-segment-ail,
+.hl7-segment-aip {
     background: rgba(47, 90, 174, 0.08);
 }
 
 .hl7-field {
     display: inline;
+    padding: 0;
+    margin: 0;
 }
 
 .hl7-field-editable {
     cursor: text;
-    padding: 2px 4px;
-    margin: 0 1px;
-    border-radius: 3px;
+    padding: 1px 2px;
+    margin: 0;
+    border-radius: 2px;
     transition: background-color 0.2s;
 }
 
@@ -279,14 +286,28 @@ body {
     background: white;
 }
 
+/* Highlight anonymized/changed fields */
+.hl7-field-anonymized {
+    background: rgba(236, 34, 39, 0.15);
+    padding: 1px 3px;
+    margin: 0 1px;
+    border-radius: 2px;
+    font-weight: 500;
+    box-shadow: 0 0 0 1px rgba(236, 34, 39, 0.2);
+}
+
 .field-separator {
     color: var(--hl7-blue);
     font-weight: 600;
+    padding: 0 1px;
+    margin: 0;
 }
 
 .component-separator {
     color: var(--hl7-red);
     font-weight: 600;
+    padding: 0 1px;
+    margin: 0;
 }
 
 /* Buttons */

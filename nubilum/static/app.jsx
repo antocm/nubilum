@@ -8,6 +8,25 @@ function HL7MessageDisplay({ message, onMessageChange, editable = false }) {
         setEditedMessage(message);
     }, [message]);
 
+    // Check if a component looks anonymized
+    const isAnonymized = (component) => {
+        if (!component) return false;
+        const patterns = [
+            /^Dr[A-Z][a-z]+\d+$/,  // DrDoe12, DrSmith45
+            /^[A-Z][a-z]+\d{2}$/,   // Doe42, John37, User16
+            /^PID\d{6}$/,           // PID123456
+            /^ACCT\d{6}$/,          // ACCT123456
+            /^SSN\d{6}$/,           // SSN123456
+            /^ORDER\d{6}$/,         // ORDER123456
+            /^VISIT\d{6}$/,         // VISIT123456
+            /^Street\d{2}$/,        // Street70
+            /^\+351\d{9}$/,         // +351123456789
+            /^City$/,               // City
+            /^12345$/,              // 12345 (zip)
+        ];
+        return patterns.some(pattern => pattern.test(component));
+    };
+
     if (!message || message.trim() === '') {
         return (
             <div className="hl7-message" style={{ color: '#a0aec0', fontStyle: 'italic' }}>
@@ -55,14 +74,19 @@ function HL7MessageDisplay({ message, onMessageChange, editable = false }) {
                                     </span>
                                 ) : (
                                     <span className="hl7-field">
-                                        {field.split('^').map((component, compIndex) => (
-                                            <React.Fragment key={compIndex}>
-                                                {compIndex > 0 && (
-                                                    <span className="component-separator">^</span>
-                                                )}
-                                                {component}
-                                            </React.Fragment>
-                                        ))}
+                                        {field.split('^').map((component, compIndex) => {
+                                            const componentAnonymized = isAnonymized(component);
+                                            return (
+                                                <React.Fragment key={compIndex}>
+                                                    {compIndex > 0 && (
+                                                        <span className="component-separator">^</span>
+                                                    )}
+                                                    <span className={componentAnonymized ? 'hl7-field-anonymized' : ''}>
+                                                        {component}
+                                                    </span>
+                                                </React.Fragment>
+                                            );
+                                        })}
                                     </span>
                                 )}
                             </React.Fragment>
