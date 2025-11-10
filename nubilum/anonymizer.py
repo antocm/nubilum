@@ -163,13 +163,29 @@ class HL7Anonymizer:
                 fields = self._anonymize_nk1_segment(fields)
             elif segment_type == 'PV1':
                 fields = self._anonymize_pv1_segment(fields)
+            elif segment_type == 'PV2':
+                fields = self._anonymize_pv2_segment(fields)
+            elif segment_type == 'PD1':
+                fields = self._anonymize_pd1_segment(fields)
             elif segment_type == 'OBX':
                 fields = self._anonymize_obx_segment(fields)
             elif segment_type == 'ORC' or segment_type == 'OBR':
                 fields = self._anonymize_order_segment(fields)
             elif segment_type in ['SCH', 'AIG', 'AIL', 'AIP']:
                 fields = self._anonymize_scheduling_segment(fields)
-            elif segment_type in ['EVN', 'PV2']:
+            elif segment_type in ['IN1', 'IN2', 'IN3']:
+                fields = self._anonymize_insurance_segment(fields)
+            elif segment_type == 'GT1':
+                fields = self._anonymize_guarantor_segment(fields)
+            elif segment_type == 'ROL':
+                fields = self._anonymize_role_segment(fields)
+            elif segment_type == 'CTI':
+                fields = self._anonymize_cti_segment(fields)
+            elif segment_type == 'DG1':
+                fields = self._anonymize_dg1_segment(fields)
+            elif segment_type == 'PR1':
+                fields = self._anonymize_pr1_segment(fields)
+            elif segment_type == 'EVN':
                 fields = self._anonymize_generic_identifiers(fields)
 
             anonymized_lines.append('|'.join(fields))
@@ -183,9 +199,9 @@ class HL7Anonymizer:
         # PID segment field positions (0-based after split)
         # 0: PID
         # 1: Set ID
-        # 2: Patient ID (external)
+        # 2: Patient ID (external) - important
         # 3: Patient ID (internal) - important
-        # 4: Alternate Patient ID
+        # 4: Alternate Patient ID - important
         # 5: Patient Name - important
         # 6: Mother's Maiden Name
         # 7: Date/Time of Birth
@@ -201,10 +217,31 @@ class HL7Anonymizer:
         # 17: Religion
         # 18: Patient Account Number - important
         # 19: SSN - important
+        # 20: Driver's License Number - important
+        # 21: Mother's Identifier
+        # 22: Ethnic Group
+        # 23: Birth Place
+        # 24: Multiple Birth Indicator
+        # 25: Birth Order
+        # 26: Citizenship
+        # 27: Veterans Military Status
+        # 28: Nationality
+        # 29: Patient Death Date and Time
+        # 30: Patient Death Indicator
+
+        if len(fields) > 2:
+            # Patient ID (external)
+            if fields[2]:
+                fields[2] = self._anonymize_composite_id(fields[2])
 
         if len(fields) > 3:
             # Patient ID (internal)
             fields[3] = self._anonymize_composite_id(fields[3])
+
+        if len(fields) > 4:
+            # Alternate Patient ID
+            if fields[4]:
+                fields[4] = self._anonymize_composite_id(fields[4])
 
         if len(fields) > 5:
             # Patient Name
@@ -212,7 +249,8 @@ class HL7Anonymizer:
 
         if len(fields) > 6:
             # Mother's Maiden Name
-            fields[6] = self._anonymize_patient_name(fields[6])
+            if fields[6]:
+                fields[6] = self._anonymize_patient_name(fields[6])
 
         if len(fields) > 7:
             # Date of Birth
@@ -241,7 +279,28 @@ class HL7Anonymizer:
 
         if len(fields) > 19:
             # SSN
-            fields[19] = self._generate_pseudo_id(fields[19], "SSN")
+            if fields[19]:
+                fields[19] = self._generate_pseudo_id(fields[19], "SSN")
+
+        if len(fields) > 20:
+            # Driver's License Number
+            if fields[20]:
+                fields[20] = self._generate_pseudo_id(fields[20], "DL")
+
+        if len(fields) > 21:
+            # Mother's Identifier
+            if fields[21]:
+                fields[21] = self._anonymize_composite_id(fields[21])
+
+        if len(fields) > 23:
+            # Birth Place
+            if fields[23]:
+                fields[23] = "City"
+
+        if len(fields) > 29:
+            # Patient Death Date and Time
+            if fields[29]:
+                fields[29] = self._anonymize_date(fields[29])
 
         return fields
 
@@ -417,5 +476,209 @@ class HL7Anonymizer:
             # Field 5 may also contain provider info
             if len(fields) > 5 and fields[5] and '^' in fields[5]:
                 fields[5] = self._anonymize_provider_name(fields[5])
+
+        return fields
+
+    def _anonymize_pv2_segment(self, fields: list) -> list:
+        """Anonymize PV2 (Patient Visit - Additional Info) segment."""
+        # PV2 fields with PHI
+        # 13: Referral Source Name
+        # 23: Clinic Organization Name
+
+        if len(fields) > 13 and fields[13]:
+            if '^' in fields[13]:
+                fields[13] = self._anonymize_provider_name(fields[13])
+
+        if len(fields) > 23 and fields[23]:
+            fields[23] = "Medical Center"
+
+        return fields
+
+    def _anonymize_pd1_segment(self, fields: list) -> list:
+        """Anonymize PD1 (Patient Demographics) segment."""
+        # PD1 fields with PHI
+        # 4: Primary Care Provider Name and ID
+        # 14: Place of Worship
+        # 15: Advance Directive Code
+
+        if len(fields) > 4 and fields[4]:
+            if '^' in fields[4]:
+                fields[4] = self._anonymize_provider_name(fields[4])
+
+        if len(fields) > 14 and fields[14]:
+            fields[14] = ""
+
+        return fields
+
+    def _anonymize_insurance_segment(self, fields: list) -> list:
+        """Anonymize IN1/IN2/IN3 (Insurance) segments."""
+        segment_type = fields[0] if len(fields) > 0 else ""
+
+        if segment_type == 'IN1':
+            # IN1 - Insurance primary info
+            # 3: Insurance Company ID
+            # 4: Insurance Company Name
+            # 5: Insurance Company Address
+            # 6: Insurance Company Contact Person
+            # 7: Insurance Company Phone
+            # 16: Name of Insured
+            # 17: Insured's Relationship to Patient
+            # 19: Insured's Address
+            # 20: Assignment of Benefits
+            # 36: Policy Number
+            # 49: Insured's ID Number
+
+            if len(fields) > 3 and fields[3]:
+                fields[3] = self._generate_pseudo_id(fields[3], "INS")
+
+            if len(fields) > 4 and fields[4]:
+                fields[4] = "Insurance Company"
+
+            if len(fields) > 5 and fields[5]:
+                fields[5] = self._anonymize_composite_address(fields[5])
+
+            if len(fields) > 6 and fields[6]:
+                if '^' in fields[6]:
+                    fields[6] = self._anonymize_patient_name(fields[6])
+
+            if len(fields) > 7 and fields[7]:
+                fields[7] = self._anonymize_phone(fields[7])
+
+            if len(fields) > 16 and fields[16]:
+                if '^' in fields[16]:
+                    fields[16] = self._anonymize_patient_name(fields[16])
+
+            if len(fields) > 19 and fields[19]:
+                fields[19] = self._anonymize_composite_address(fields[19])
+
+            if len(fields) > 36 and fields[36]:
+                fields[36] = self._generate_pseudo_id(fields[36], "POL")
+
+            if len(fields) > 49 and fields[49]:
+                fields[49] = self._generate_pseudo_id(fields[49], "INSID")
+
+        elif segment_type == 'IN2':
+            # IN2 - Insurance additional info
+            # 1: Insured's Employee ID
+            # 2: Insured's SSN
+            # 6: Medicare Health Insurance Card Number
+            # 26: Payor Subscriber ID
+            # 61: Insured's Phone Number
+            # 63: Insured's Employer's Address
+            # 72: Insured's Employer Name
+
+            if len(fields) > 1 and fields[1]:
+                fields[1] = self._generate_pseudo_id(fields[1], "EMP")
+
+            if len(fields) > 2 and fields[2]:
+                fields[2] = self._generate_pseudo_id(fields[2], "SSN")
+
+            if len(fields) > 6 and fields[6]:
+                fields[6] = self._generate_pseudo_id(fields[6], "MED")
+
+            if len(fields) > 26 and fields[26]:
+                fields[26] = self._generate_pseudo_id(fields[26], "SUB")
+
+            if len(fields) > 61 and fields[61]:
+                fields[61] = self._anonymize_phone(fields[61])
+
+            if len(fields) > 63 and fields[63]:
+                fields[63] = self._anonymize_composite_address(fields[63])
+
+            if len(fields) > 72 and fields[72]:
+                fields[72] = "Company Name"
+
+        return fields
+
+    def _anonymize_guarantor_segment(self, fields: list) -> list:
+        """Anonymize GT1 (Guarantor) segment."""
+        # GT1 fields with PHI
+        # 2: Guarantor Number
+        # 3: Guarantor Name
+        # 5: Guarantor Address
+        # 6: Guarantor Phone
+        # 7: Guarantor Business Phone
+        # 10: Guarantor Type
+        # 12: Guarantor SSN
+        # 15: Guarantor Employer Name
+        # 16: Guarantor Employer Address
+        # 17: Guarantor Employer Phone
+
+        if len(fields) > 2 and fields[2]:
+            fields[2] = self._generate_pseudo_id(fields[2], "GUAR")
+
+        if len(fields) > 3 and fields[3]:
+            if '^' in fields[3]:
+                fields[3] = self._anonymize_patient_name(fields[3])
+
+        if len(fields) > 5 and fields[5]:
+            fields[5] = self._anonymize_composite_address(fields[5])
+
+        if len(fields) > 6 and fields[6]:
+            fields[6] = self._anonymize_phone(fields[6])
+
+        if len(fields) > 7 and fields[7]:
+            fields[7] = self._anonymize_phone(fields[7])
+
+        if len(fields) > 12 and fields[12]:
+            fields[12] = self._generate_pseudo_id(fields[12], "SSN")
+
+        if len(fields) > 15 and fields[15]:
+            fields[15] = "Employer Name"
+
+        if len(fields) > 16 and fields[16]:
+            fields[16] = self._anonymize_composite_address(fields[16])
+
+        if len(fields) > 17 and fields[17]:
+            fields[17] = self._anonymize_phone(fields[17])
+
+        return fields
+
+    def _anonymize_role_segment(self, fields: list) -> list:
+        """Anonymize ROL (Role) segment."""
+        # ROL fields with PHI
+        # 4: Role Person - provider/person name
+
+        if len(fields) > 4 and fields[4]:
+            if '^' in fields[4]:
+                fields[4] = self._anonymize_provider_name(fields[4])
+
+        return fields
+
+    def _anonymize_cti_segment(self, fields: list) -> list:
+        """Anonymize CTI (Clinical Trial Identification) segment."""
+        # CTI fields with PHI
+        # 3: Study Participating Person
+
+        if len(fields) > 3 and fields[3]:
+            if '^' in fields[3]:
+                fields[3] = self._anonymize_provider_name(fields[3])
+
+        return fields
+
+    def _anonymize_dg1_segment(self, fields: list) -> list:
+        """Anonymize DG1 (Diagnosis) segment."""
+        # DG1 fields with PHI
+        # 16: Diagnosing Clinician
+
+        if len(fields) > 16 and fields[16]:
+            if '^' in fields[16]:
+                fields[16] = self._anonymize_provider_name(fields[16])
+
+        return fields
+
+    def _anonymize_pr1_segment(self, fields: list) -> list:
+        """Anonymize PR1 (Procedures) segment."""
+        # PR1 fields with PHI
+        # 11: Surgeon
+        # 12: Procedure Practitioner
+
+        if len(fields) > 11 and fields[11]:
+            if '^' in fields[11]:
+                fields[11] = self._anonymize_provider_name(fields[11])
+
+        if len(fields) > 12 and fields[12]:
+            if '^' in fields[12]:
+                fields[12] = self._anonymize_provider_name(fields[12])
 
         return fields

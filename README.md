@@ -256,8 +256,101 @@ pip install dist/nubilum-1.0.0-py3-none-any.whl
 Logs are written to files in the configured log directory:
 
 - `nubilum_YYYYMMDD.log`: Application logs
+- `usage_log.jsonl`: Usage tracking log (JSONL format)
 - `access.log`: HTTP access logs (when using Gunicorn)
 - `error.log`: Error logs
+
+## Usage Tracking
+
+Nubilum automatically tracks anonymization usage to help administrators monitor tool adoption and usage patterns. **No message content is stored** - only metadata about each anonymization event.
+
+### Tracked Information
+
+For each anonymization event, the following is recorded:
+
+- **Timestamp**: Date and time of anonymization
+- **Message Type**: HL7 message type (e.g., `ADT^A01`, `ORU^R01`)
+- **Segment Counts**: Number of each segment type (PID, OBR, etc.)
+- **Total Segments**: Total number of segments in message
+- **Message Length**: Size of the message in characters
+- **Success/Failure**: Whether anonymization succeeded
+- **Error Message**: If failed, the error description
+
+### Viewing Usage Statistics
+
+Access usage statistics via the REST API:
+
+```bash
+# Get all-time statistics
+curl http://localhost:8080/api/usage/statistics
+
+# Get statistics for last 7 days
+curl http://localhost:8080/api/usage/statistics?days=7
+
+# Get statistics for last 30 days
+curl http://localhost:8080/api/usage/statistics?days=30
+```
+
+**Example Response:**
+
+```json
+{
+  "success": true,
+  "period": "last 7 days",
+  "statistics": {
+    "total_anonymizations": 145,
+    "successful_anonymizations": 143,
+    "failed_anonymizations": 2,
+    "success_rate": 98.62,
+    "message_types": {
+      "ADT^A01": 56,
+      "ORU^R01": 42,
+      "ORM^O01": 28,
+      "SIU^S12": 19
+    },
+    "segments_processed": {
+      "MSH": 145,
+      "PID": 145,
+      "PV1": 98,
+      "OBR": 70,
+      "OBX": 312,
+      "NK1": 23
+    },
+    "total_segments": 1023,
+    "average_segments_per_message": 7.1,
+    "total_message_length": 234567,
+    "average_message_length": 1618,
+    "daily_counts": {
+      "2025-01-07": 42,
+      "2025-01-08": 38,
+      "2025-01-09": 65
+    },
+    "hourly_distribution": {
+      "9": 12,
+      "10": 23,
+      "11": 18,
+      "14": 31,
+      "15": 27,
+      "16": 19
+    }
+  }
+}
+```
+
+### Usage Log Format
+
+The usage log is stored in JSONL (JSON Lines) format at `/var/log/nubilum/usage_log.jsonl`. Each line is a valid JSON object:
+
+```json
+{"timestamp": "2025-01-07T14:23:45.123456", "date": "2025-01-07", "time": "14:23:45", "message_type": "ADT^A01", "segment_counts": {"MSH": 1, "EVN": 1, "PID": 1, "PV1": 1}, "total_segments": 4, "message_length": 512, "success": true, "error": null}
+```
+
+### Privacy Considerations
+
+- **No PHI Stored**: Original message content is never written to the usage log
+- **Metadata Only**: Only counts, types, and timestamps are recorded
+- **HIPAA Compliant**: Usage tracking does not compromise patient privacy
+- **Audit Trail**: Provides accountability without storing sensitive data
 
 ## Security Considerations
 
