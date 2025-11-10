@@ -67,6 +67,8 @@ The anonymizer handles multiple HL7 segments:
 - **PV1**: Patient Visit data (doctors, visit numbers)
 - **ORC/OBR**: Order segments (order numbers, providers)
 - **OBX**: Observation results (observers)
+- **SCH**: Scheduling Activity Information (appointment IDs, placer contacts)
+- **AIG/AIL/AIP**: Appointment resources (personnel, locations)
 - **EVN/PV2**: Generic user/operator fields
 
 ### 2. Smart Pseudo-Generation
@@ -81,10 +83,14 @@ The anonymizer handles multiple HL7 segments:
 ### 3. User-Friendly Interface
 
 - **Color-coded segments**: Each segment type has a distinct color
+- **Field name tooltips**: Hover over any field to see its HL7 standard name (version-aware)
+- **Multi-message support**: Process multiple HL7 messages in a single request
+- **Message validation**: Validate messages using HL7 Portugal validator API
+- **Collapsible validation badges**: Red/green indicators with expandable details
 - **Inline editing**: Click any field to edit it
 - **Copy to clipboard**: One-click copying of anonymized messages
 - **Character counter**: Shows message length
-- **Example loader**: Built-in example message
+- **Example loader**: Built-in example messages
 - **Clear all**: Quick reset of input and output
 
 ### 4. Privacy & Security
@@ -113,7 +119,7 @@ Health check endpoint returning status and version.
 Returns application name and version.
 
 ### POST /api/anonymize
-Anonymizes an HL7 message.
+Anonymizes one or more HL7 messages (supports multiple messages).
 
 **Request:**
 ```json
@@ -126,7 +132,68 @@ Anonymizes an HL7 message.
 ```json
 {
   "success": true,
-  "anonymized_message": "MSH|^~\\&|..."
+  "anonymized_message": "MSH|^~\\&|...",
+  "message_count": 1
+}
+```
+
+### POST /api/validate
+Validates HL7 messages using HL7 Portugal validator API.
+
+**Request:**
+```json
+{
+  "message": "MSH|^~\\&|..."
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "validator_url": "https://version2.hl7.pt/",
+  "message_count": 1,
+  "results": [{"message_number": 1, "valid": true, "message": "...", "details": {...}}]
+}
+```
+
+### GET /api/field-name
+Returns the HL7 standard name for a specific field.
+
+**Query Parameters:**
+- `segment`: Segment type (e.g., "PID", "MSH")
+- `field`: Field index (0-based)
+- `version`: HL7 version (optional, defaults to "2.5")
+
+**Response:**
+```json
+{
+  "success": true,
+  "field_name": "Patient Identifier List",
+  "segment": "PID",
+  "field_index": 3,
+  "version": "2.5"
+}
+```
+
+### GET /api/usage/statistics
+Returns usage statistics for anonymization events.
+
+**Query Parameters:**
+- `days`: Number of days to look back (optional)
+
+**Response:**
+```json
+{
+  "success": true,
+  "period": "last 7 days",
+  "statistics": {
+    "total_anonymizations": 145,
+    "successful_anonymizations": 143,
+    "success_rate": 98.62,
+    "message_types": {...},
+    "segments_processed": {...}
+  }
 }
 ```
 
@@ -234,6 +301,7 @@ Potential improvements:
 - hl7apy>=1.3.4
 - python-dateutil>=2.8.2
 - gunicorn>=21.2.0
+- requests>=2.31.0 (for validation API)
 
 ### Build
 - setuptools>=65.0

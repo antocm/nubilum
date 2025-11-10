@@ -9,13 +9,17 @@ Nubilum is a web-based tool for anonymizing HL7 v2 messages in ER7 format. It pr
 ## Features
 
 - **Full PID Segment Anonymization**: Comprehensive anonymization of patient identification data
-- **Multi-Segment Support**: Anonymizes PID, NK1, PV1, OBX, ORC, OBR, and other segments
+- **Multi-Segment Support**: Anonymizes PID, NK1, PV1, OBX, ORC, OBR, SCH, AIG, AIL, AIP, and other segments
+- **Multi-Message Processing**: Handles multiple HL7 messages in a single request (separated by blank lines or multiple MSH segments)
+- **HL7 Message Validation**: Validates messages using HL7 Portugal validator API with collapsible result badges
+- **Field Name Tooltips**: Hover over any field to see its HL7 standard name (version-aware using hl7apy)
 - **Smart Pseudo-Generation**: Generates consistent pseudo-names and IDs that indicate field purpose
 - **Real-Time Processing**: No storage of messages - all processing is done in real-time
 - **Interactive Display**: Color-coded segments with inline editing capabilities
 - **Easy Copy/Paste**: One-click copying of anonymized messages
 - **Docker-Ready**: Complete containerization with nginx reverse proxy
 - **Comprehensive Logging**: File-based logging for audit and debugging
+- **Usage Statistics**: Track anonymization usage patterns via REST API
 
 ## Privacy & Security
 
@@ -117,20 +121,23 @@ OBR|1|ORDER789012|FILLER456789|CBC^Complete Blood Count^L|||20250107143000|||DrD
 ### Example 3: Using the Web Interface
 
 1. **Load the application** in your browser
-2. **Paste your HL7 message** into the left input panel
+2. **Paste your HL7 message(s)** into the left input panel (multiple messages supported)
 3. **Click "Anonymize Message"** button
-4. **Review the color-coded output** in the right panel:
-   - MSH segments are highlighted in purple
-   - PID segments are highlighted in pink
-   - PV1 segments are highlighted in green
-   - OBR/OBX segments are highlighted in yellow/blue
-5. **Edit any field** by clicking on it in the output panel
-6. **Copy the result** using the "Copy to Clipboard" button
+4. **Optional: Click "Validate Message"** to check HL7 compliance using HL7 Portugal validator
+5. **Review the color-coded output** in the right panel:
+   - MSH segments are highlighted in blue
+   - PID segments are highlighted in red
+   - PV1 segments are highlighted in purple
+   - OBR/OBX segments are highlighted in blue/purple
+6. **Hover over fields** to see their HL7 standard names (e.g., "Patient ID" for PID-3)
+7. **Edit any field** by clicking on it in the output panel
+8. **Copy the result** using the "Copy to Clipboard" button
 
 ### Example 4: API Usage
 
 You can also use the API directly:
 
+**Anonymize Messages:**
 ```bash
 curl -X POST http://localhost:8080/api/anonymize \
   -H "Content-Type: application/json" \
@@ -140,11 +147,36 @@ curl -X POST http://localhost:8080/api/anonymize \
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
-  "anonymized_message": "MSH|^~\\&|APP|FACILITY|REC|FAC|20250107||ADT^A01|MSG001|P|2.5\nPID|1||PID123456||Doe42^John37||19800530|M"
+  "anonymized_message": "MSH|^~\\&|APP|FACILITY|REC|FAC|20250107||ADT^A01|MSG001|P|2.5\nPID|1||PID123456||Doe42^John37||19800530|M",
+  "message_count": 1
+}
+```
+
+**Validate Messages:**
+```bash
+curl -X POST http://localhost:8080/api/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "MSH|^~\\&|APP|FACILITY|REC|FAC|20250107||ADT^A01|MSG001|P|2.5\nPID|1||123456||Doe^John||19800515|M"
+  }'
+```
+
+**Get Field Name:**
+```bash
+curl "http://localhost:8080/api/field-name?segment=PID&field=3&version=2.5"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "field_name": "Patient Identifier List",
+  "segment": "PID",
+  "field_index": 3,
+  "version": "2.5"
 }
 ```
 
@@ -250,6 +282,10 @@ pip install dist/nubilum-1.0.0-py3-none-any.whl
 - **ORC**: Common Order
 - **OBR**: Observation Request
 - **OBX**: Observation Result
+- **SCH**: Scheduling Activity Information
+- **AIG**: Appointment Information - General Resource
+- **AIL**: Appointment Information - Location Resource
+- **AIP**: Appointment Information - Personnel Resource
 
 ## Logging
 
